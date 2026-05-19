@@ -463,6 +463,46 @@ def hypercube_info(n: int) -> dict[str, object]:
     }
 
 
+def divide_with_remainder(a: int, b: int) -> tuple[int, int]:
+    """Returns (quotient, remainder) for a ÷ b and prints a human-readable line."""
+    q, r = divmod(a, b)
+    print(f"{a} = {q}·{b} + {r}   (remainder {r})")
+    return q, r
+
+
+def get_r_permutations(items: str | Sequence[str], r: int) -> list[str]:
+    """All r-permutations of items (order matters, no repetition)."""
+    return ["".join(p) for p in permutations(items, r)]
+
+
+def get_combinations(items: str | Sequence[str]) -> list[str]:
+    """All non-empty subsets of items (all sizes, order does not matter)."""
+    result = []
+    for r in range(1, len(items) + 1):
+        result.extend("".join(c) for c in combinations(items, r))
+    return result
+
+
+def get_r_combinations(items: str | Sequence[str], r: int) -> list[str]:
+    """All r-combinations of items (order does not matter)."""
+    return ["".join(c) for c in combinations(items, r)]
+
+
+def minimum_selections_for_sum(numbers: Sequence[int], target_sum: int) -> int | None:
+    """
+    Minimum items to draw (worst case) to guarantee a pair summing to target_sum.
+    Returns None if no such pair exists in numbers.
+    Pigeonhole: worst case = draw all singletons + 1 from each pair + 1 more.
+    """
+    num_set = set(numbers)
+    can_pair = {a for a in numbers if (target_sum - a) in num_set and a != target_sum - a}
+    if not can_pair:
+        return None
+    num_pairs = len(can_pair) // 2
+    safe = [x for x in numbers if x not in can_pair]
+    return len(safe) + num_pairs + 1
+
+
 def count_permutations_subsequence(items: str | Sequence[str], subsequence: str) -> int:
     """Count permutations containing `subsequence` as a (non-contiguous) subsequence."""
     def has_subseq(perm: str, sub: str) -> bool:
