@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python 3.14.5
+        run: uv python install 3.14.5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check discrete_tools.py imports cleanly
+        run: uv run python -c "import discrete_tools"
+
+      - name: Validate notebook.ipynb
+        run: |
+          uv run python - <<'EOF'
+          import json, sys
+
+          try:
+              nb = json.loads(open("notebook.ipynb").read())
+          except json.JSONDecodeError as e:
+              print(f"FAIL: notebook.ipynb is not valid JSON: {e}")
+              sys.exit(1)
+
+          required = {"nbformat", "nbformat_minor", "metadata", "cells"}
+          missing = required - nb.keys()
+          if missing:
+              print(f"FAIL: notebook missing top-level keys: {missing}")
+              sys.exit(1)
+
+          if nb["nbformat"] < 4:
+              print(f"FAIL: expected nbformat >= 4, got {nb['nbformat']}")
+              sys.exit(1)
+
+          errors = []
+          for i, cell in enumerate(nb["cells"]):
+              cid = cell.get("id", f"<index {i}>")
+              if cell.get("cell_type") not in ("code", "markdown", "raw"):
+                  errors.append(f"Cell {cid}: unknown cell_type {cell.get('cell_type')!r}")
+              if not isinstance(cell.get("source", None), (str, list)):
+                  errors.append(f"Cell {cid}: source must be str or list")
+
+          if errors:
+              print("FAIL: notebook has structural errors:")
+              for e in errors:
+                  print(" ", e)
+              sys.exit(1)
+
+          print(f"OK: {len(nb['cells'])} cells, nbformat {nb['nbformat']}.{nb['nbformat_minor']}")
+          EOF
