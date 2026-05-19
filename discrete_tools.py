@@ -411,6 +411,58 @@ def get_permutations(items: str | Sequence[str]) -> list[str]:
     return ["".join(p) for p in permutations(items)]
 
 
+# ---------------------------------------------------------------------------
+# Derangements
+# ---------------------------------------------------------------------------
+
+def derangements_count(n: int) -> int:
+    """D(n): number of derangements of n elements. D(n) = n! * Σ (-1)^k/k! for k=0..n"""
+    return round(math.factorial(n) * sum((-1)**k / math.factorial(k) for k in range(n + 1)))
+
+
+def get_derangements(items: str | Sequence[str]) -> list[str]:
+    """All permutations of items where no element stays in its original position."""
+    items = list(items)
+    return [
+        "".join(p) for p in permutations(items)
+        if all(p[i] != items[i] for i in range(len(items)))
+    ]
+
+
+# ---------------------------------------------------------------------------
+# N-cubes (hypercube graphs Q_n)
+# ---------------------------------------------------------------------------
+
+def hypercube_vertices(n: int) -> list[str]:
+    """Vertices of Q_n: all binary strings of length n."""
+    return ["".join(str(b) for b in bits) for bits in product([0, 1], repeat=n)]
+
+
+def hypercube_edges(n: int) -> list[tuple[str, str]]:
+    """Edges of Q_n: pairs of binary strings differing in exactly one bit."""
+    verts = hypercube_vertices(n)
+    return [
+        (u, v) for i, u in enumerate(verts) for v in verts[i + 1:]
+        if sum(a != b for a, b in zip(u, v)) == 1
+    ]
+
+
+def hypercube_info(n: int) -> dict[str, object]:
+    """Stats about Q_n: vertex count, edge count, degree, Hamilton cycle existence."""
+    verts = hypercube_vertices(n)
+    edges = hypercube_edges(n)
+    return {
+        "n": n,
+        "vertices": 2 ** n,
+        "edges": n * 2 ** (n - 1),
+        "degree": n,           # every vertex has degree n (n-regular)
+        "bipartite": True,     # Q_n is always bipartite
+        "hamiltonian": n >= 1, # Q_n has a Hamilton cycle for n >= 1 (Gray code)
+        "vertex_list": verts,
+        "edge_count_check": len(edges) == n * 2 ** (n - 1),
+    }
+
+
 def count_permutations_subsequence(items: str | Sequence[str], subsequence: str) -> int:
     """Count permutations containing `subsequence` as a (non-contiguous) subsequence."""
     def has_subseq(perm: str, sub: str) -> bool:

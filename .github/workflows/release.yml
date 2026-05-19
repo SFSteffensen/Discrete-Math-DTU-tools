@@ -1,0 +1,78 @@
+name: Release Cleaned Notebook
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main   # tags must be on main to fire; tags pushed from dev are ignored
+
+jobs:
+  release:
+    # Only run when the tagged commit is reachable from main
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Strip notebook outputs
+        run: |
+          uv run python - <<'EOF'
+          import json, pathlib
+
+          nb = json.loads(pathlib.Path("notebook.ipynb").read_text())
+
+          for cell in nb["cells"]:
+              cell["execution_count"] = None
+              if "outputs" in cell:
+                  cell["outputs"] = []
+              cell.get("metadata", {}).pop("collapsed", None)
+              cell.get("metadata", {}).pop("scrolled", None)
+
+          nb["metadata"].pop("widgets", None)
+
+          pathlib.Path("notebook_clean.ipynb").write_text(
+              json.dumps(nb, indent=1, ensure_ascii=False)
+          )
+          print("Cleaned notebook written.")
+          EOF
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          gh release create "$TAG" \
+            notebook_clean.ipynb \
+            discrete_tools.py \
+            --title "Discrete Math DTU Tools ${TAG}" \
+            --notes "## Discrete Math DTU Tools — ${TAG}
+
+          A clean Jupyter notebook covering all E25 exam question types, backed by \`discrete_tools.py\`.
+
+          ### What's included
+          - \`notebook_clean.ipynb\` — all 21 exam questions + reference templates + misc library guide
+          - \`discrete_tools.py\` — the backing library (no installs needed beyond sympy/polars)
+
+          ### Usage
+          1. Download both files into the same directory
+          2. Run \`uv sync\` (or \`pip install sympy polars ipykernel\`)
+          3. Open the notebook in VS Code, JupyterLab, or any notebook environment
+
+          ### Topics covered
+          Number theory · Modular arithmetic · CRT · Polynomial GCD · Combinatorics ·
+          Derangements · N-cubes · Inclusion-exclusion · Pigeonhole · Relations ·
+          Function classification · Tautologies · Set algebra · Induction · Circular seating ·
+          Binomial coefficients"
