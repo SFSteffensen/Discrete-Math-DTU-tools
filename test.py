@@ -1,4 +1,4 @@
-# Run with:  python -m pytest test.py -v
+# Run with:  uv run pytest
 from math import comb, factorial
 
 import pytest
