@@ -20,10 +20,19 @@ jobs:
         run: uv python install 3.14.5
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --group dev
+
+      - name: Lint (ruff check)
+        run: uvx ruff check discrete_tools.py test.py
+
+      - name: Format check (ruff format)
+        run: uvx ruff format --check discrete_tools.py test.py
 
       - name: Check discrete_tools.py imports cleanly
         run: uv run python -c "import discrete_tools"
+
+      - name: Run tests
+        run: uv run pytest test.py -v
 
       - name: Validate notebook.ipynb
         run: |
