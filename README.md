@@ -45,8 +45,8 @@ jupyter lab notebook.ipynb
 
 ### `notebook.ipynb`
 
-- **Reference & Tools** — one section per topic above, with copy-paste templates
-- **E25 Exam** — all 21 questions worked through programmatically, answers verified against the official answer key
+- **Reference & Tools:** one section per topic above, with copy-paste templates
+- **E25 Exam:** all 21 questions worked through programmatically, answers verified against the official answer key sheet.
 
 ---
 
@@ -54,7 +54,7 @@ jupyter lab notebook.ipynb
 
 | Package | Purpose |
 |---|---|
-| `sympy` | Symbolic maths — GCD, polynomials, totient, binomial |
+| `sympy` | Symbolic maths, GCD, polynomials, totient, binomial |
 | `polars` | Pretty-printed EEA tables |
 | `ipykernel` | Jupyter kernel |
 
@@ -69,8 +69,8 @@ alongside `discrete_tools.py`, so you can download and run from scratch without 
 
 ```bash
 # Cut a release from main
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.x.x
+git push origin v1.x.x
 ```
 
 ---
