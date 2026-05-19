@@ -1,16 +1,17 @@
+import math
 import re
-from itertools import permutations, product, chain, combinations
 from functools import lru_cache
+from itertools import combinations, permutations, product
 from typing import Callable, Iterable, Sequence
 
-import math
 import sympy as sp
 from sympy import Poly, symbols
 from sympy.parsing.sympy_parser import (
+    implicit_multiplication_application,
     parse_expr,
     standard_transformations,
-    implicit_multiplication_application,
 )
+
 
 # Private helper: silent extended Euclidean algorithm.
 # Returns (gcd, s, t) such that gcd = s*a + t*b.
@@ -51,8 +52,9 @@ def congruences_system_solver(system):
     for i in range(len(M_list)):
         x += system[i][0] * M_list[i] * y_list[i]
     x = x % m
-    print(f'{{{x} + {m}k | k ∈ ℤ}}')
+    print(f"{{{x} + {m}k | k ∈ ℤ}}")
     return x, m
+
 
 def polynomial_gcd(poly1, poly2, show_steps=False):
     p1 = Poly(poly1)
@@ -75,7 +77,9 @@ def polynomial_extended_gcd(poly1, poly2, show_steps=False):
         t = Poly(t.as_expr() / lc, *p1.gens)
     if show_steps:
         print(f"gcd = {g.as_expr()}")
-        print(f"Bezout: ({s.as_expr()})*({p1.as_expr()}) + ({t.as_expr()})*({p2.as_expr()})")
+        print(
+            f"Bezout: ({s.as_expr()})*({p1.as_expr()}) + ({t.as_expr()})*({p2.as_expr()})"
+        )
     return g, s, t
 
 
@@ -87,7 +91,11 @@ def recursive_piecewise_value(
 ):
     if n < 0:
         raise ValueError("n must be non-negative.")
-    missing_base = [k for k in range(min(initial_values), max(initial_values) + 1) if k not in initial_values]
+    missing_base = [
+        k
+        for k in range(min(initial_values), max(initial_values) + 1)
+        if k not in initial_values
+    ]
     if missing_base:
         raise ValueError(f"Base values are not contiguous. Missing: {missing_base}")
 
@@ -110,8 +118,12 @@ def subset_parity_counts_1_to_n(n: int) -> dict[str, int]:
     evens = n // 2
     odds = n - evens
 
-    odd_even_and_even_odd = 0 if evens == 0 or odds == 0 else (2 ** (evens - 1)) * (2 ** (odds - 1))
-    odd_odd_and_even_even = 0 if odds == 0 or evens == 0 else (2 ** (odds - 1)) * (2 ** (evens - 1))
+    odd_even_and_even_odd = (
+        0 if evens == 0 or odds == 0 else (2 ** (evens - 1)) * (2 ** (odds - 1))
+    )
+    odd_odd_and_even_even = (
+        0 if odds == 0 or evens == 0 else (2 ** (odds - 1)) * (2 ** (evens - 1))
+    )
     odd_odd = 0 if odds == 0 else (2**evens) * (2 ** (odds - 1))
 
     return {
@@ -137,7 +149,9 @@ def match_answers(correct_value, options: Sequence[str]) -> list[str]:
     return matched
 
 
-def classify_function_finite(domain: Iterable, codomain: Iterable, func: Callable) -> dict[str, object]:
+def classify_function_finite(
+    domain: Iterable, codomain: Iterable, func: Callable
+) -> dict[str, object]:
     domain = list(domain)
     codomain = list(codomain)
 
@@ -177,7 +191,13 @@ def classify_function_finite(domain: Iterable, codomain: Iterable, func: Callabl
 
 
 def _normalize_number_set_name(name: str) -> str:
-    name = name.strip().replace("ℕ", "N").replace("ℤ", "Z").replace("ℚ", "Q").replace("ℝ", "R")
+    name = (
+        name.strip()
+        .replace("ℕ", "N")
+        .replace("ℤ", "Z")
+        .replace("ℚ", "Q")
+        .replace("ℝ", "R")
+    )
     name = name.upper()
     aliases = {"NN": "N", "ZZ": "Z", "QQ": "Q", "RR": "R"}
     return aliases.get(name, name)
@@ -190,7 +210,9 @@ def classify_linear_function_descriptor(descriptor: str) -> dict[str, object]:
     )
     m = pattern.search(descriptor.strip())
     if not m:
-        raise ValueError("Could not parse descriptor. Use format like: f: NN -> NN, f(x)=2x+7")
+        raise ValueError(
+            "Could not parse descriptor. Use format like: f: NN -> NN, f(x)=2x+7"
+        )
 
     domain = _normalize_number_set_name(m.group(1))
     codomain = _normalize_number_set_name(m.group(2))
@@ -200,7 +222,9 @@ def classify_linear_function_descriptor(descriptor: str) -> dict[str, object]:
     expr = parse_expr(expr_str, local_dict={"x": x}, transformations=transformations)
     linear = sp.Poly(sp.expand(expr), x)
     if linear.degree() > 1:
-        raise ValueError("This helper currently supports linear functions only: f(x)=ax+b")
+        raise ValueError(
+            "This helper currently supports linear functions only: f(x)=ax+b"
+        )
 
     a = sp.simplify(linear.coeffs()[0] if linear.degree() == 1 else 0)
     b = sp.simplify(linear.nth(0))
@@ -281,7 +305,7 @@ class _LogicParser:
         while i < len(expression):
             m = self._token_pattern.match(expression, i)
             if not m:
-                raise ValueError(f"Invalid token near: {expression[i:i+15]}")
+                raise ValueError(f"Invalid token near: {expression[i : i + 15]}")
             token = m.group(1)
             if token and not token.isspace():
                 tokens.append(token)
@@ -376,13 +400,21 @@ def _logic_eval(ast_node, valuation: dict[str, bool]) -> bool:
     if op in ("not", "¬", "!"):
         return not _logic_eval(ast_node[1], valuation)
     if op in ("and", "∧"):
-        return _logic_eval(ast_node[1], valuation) and _logic_eval(ast_node[2], valuation)
+        return _logic_eval(ast_node[1], valuation) and _logic_eval(
+            ast_node[2], valuation
+        )
     if op in ("or", "∨"):
-        return _logic_eval(ast_node[1], valuation) or _logic_eval(ast_node[2], valuation)
+        return _logic_eval(ast_node[1], valuation) or _logic_eval(
+            ast_node[2], valuation
+        )
     if op in ("=>", "->", "→"):
-        return (not _logic_eval(ast_node[1], valuation)) or _logic_eval(ast_node[2], valuation)
+        return (not _logic_eval(ast_node[1], valuation)) or _logic_eval(
+            ast_node[2], valuation
+        )
     if op in ("<=>", "↔"):
-        return _logic_eval(ast_node[1], valuation) == _logic_eval(ast_node[2], valuation)
+        return _logic_eval(ast_node[1], valuation) == _logic_eval(
+            ast_node[2], valuation
+        )
     raise ValueError(f"Unknown operator: {op}")
 
 
@@ -411,11 +443,114 @@ def get_permutations(items: str | Sequence[str]) -> list[str]:
     return ["".join(p) for p in permutations(items)]
 
 
+# ---------------------------------------------------------------------------
+# Derangements
+# ---------------------------------------------------------------------------
+
+
+def derangements_count(n: int) -> int:
+    """D(n): number of derangements of n elements. D(n) = n! * Σ (-1)^k/k! for k=0..n"""
+    return round(
+        math.factorial(n) * sum((-1) ** k / math.factorial(k) for k in range(n + 1))
+    )
+
+
+def get_derangements(items: str | Sequence[str]) -> list[str]:
+    """All permutations of items where no element stays in its original position."""
+    items = list(items)
+    return [
+        "".join(p)
+        for p in permutations(items)
+        if all(p[i] != items[i] for i in range(len(items)))
+    ]
+
+
+# ---------------------------------------------------------------------------
+# N-cubes (hypercube graphs Q_n)
+# ---------------------------------------------------------------------------
+
+
+def hypercube_vertices(n: int) -> list[str]:
+    """Vertices of Q_n: all binary strings of length n."""
+    return ["".join(str(b) for b in bits) for bits in product([0, 1], repeat=n)]
+
+
+def hypercube_edges(n: int) -> list[tuple[str, str]]:
+    """Edges of Q_n: pairs of binary strings differing in exactly one bit."""
+    verts = hypercube_vertices(n)
+    return [
+        (u, v)
+        for i, u in enumerate(verts)
+        for v in verts[i + 1 :]
+        if sum(a != b for a, b in zip(u, v)) == 1
+    ]
+
+
+def hypercube_info(n: int) -> dict[str, object]:
+    """Stats about Q_n: vertex count, edge count, degree, Hamilton cycle existence."""
+    verts = hypercube_vertices(n)
+    edges = hypercube_edges(n)
+    return {
+        "n": n,
+        "vertices": 2**n,
+        "edges": n * 2 ** (n - 1),
+        "degree": n,  # every vertex has degree n (n-regular)
+        "bipartite": True,  # Q_n is always bipartite
+        "hamiltonian": n >= 1,  # Q_n has a Hamilton cycle for n >= 1 (Gray code)
+        "vertex_list": verts,
+        "edge_count_check": len(edges) == n * 2 ** (n - 1),
+    }
+
+
+def divide_with_remainder(a: int, b: int) -> tuple[int, int]:
+    """Returns (quotient, remainder) for a ÷ b and prints a human-readable line."""
+    q, r = divmod(a, b)
+    print(f"{a} = {q}·{b} + {r}   (remainder {r})")
+    return q, r
+
+
+def get_r_permutations(items: str | Sequence[str], r: int) -> list[str]:
+    """All r-permutations of items (order matters, no repetition)."""
+    return ["".join(p) for p in permutations(items, r)]
+
+
+def get_combinations(items: str | Sequence[str]) -> list[str]:
+    """All non-empty subsets of items (all sizes, order does not matter)."""
+    result = []
+    for r in range(1, len(items) + 1):
+        result.extend("".join(c) for c in combinations(items, r))
+    return result
+
+
+def get_r_combinations(items: str | Sequence[str], r: int) -> list[str]:
+    """All r-combinations of items (order does not matter)."""
+    return ["".join(c) for c in combinations(items, r)]
+
+
+def minimum_selections_for_sum(numbers: Sequence[int], target_sum: int) -> int | None:
+    """
+     Minimum items to draw (worst case) to guarantee a pair summing to target_sum.
+    Returns None if no such pair exists in numbers.
+    Pigeonhole: worst case = draw all singletons + 1 from each pair + 1 more.
+    """
+    num_set = set(numbers)
+    can_pair = {
+        a for a in numbers if (target_sum - a) in num_set and a != target_sum - a
+    }
+    if not can_pair:
+        return None
+    num_pairs = len(can_pair) // 2
+    safe = [x for x in numbers if x not in can_pair]
+    return len(safe) + num_pairs + 1
+
+
 def count_permutations_subsequence(items: str | Sequence[str], subsequence: str) -> int:
     """Count permutations containing `subsequence` as a (non-contiguous) subsequence."""
+
     def has_subseq(perm: str, sub: str) -> bool:
         it = iter(perm)
         return all(c in it for c in sub)
+
     return sum(1 for p in get_permutations(items) if has_subseq(p, subsequence))
 
 
@@ -456,7 +591,7 @@ class _SetExprParser:
         while i < len(expression):
             m = self._tok.match(expression, i)
             if not m:
-                raise ValueError(f"Invalid set token near: {expression[i:i+15]}")
+                raise ValueError(f"Invalid set token near: {expression[i : i + 15]}")
             tokens.append(m.group(1))
             i = m.end()
         return tokens
@@ -525,15 +660,23 @@ def _set_eval(ast_node, sets: dict[str, set], universal_set: set):
     if op in ("~", "overline"):
         return set(universal_set) - _set_eval(ast_node[1], sets, universal_set)
     if op in ("union", "∪"):
-        return _set_eval(ast_node[1], sets, universal_set) | _set_eval(ast_node[2], sets, universal_set)
+        return _set_eval(ast_node[1], sets, universal_set) | _set_eval(
+            ast_node[2], sets, universal_set
+        )
     if op in ("inter", "∩"):
-        return _set_eval(ast_node[1], sets, universal_set) & _set_eval(ast_node[2], sets, universal_set)
+        return _set_eval(ast_node[1], sets, universal_set) & _set_eval(
+            ast_node[2], sets, universal_set
+        )
     if op in ("without", "\\"):
-        return _set_eval(ast_node[1], sets, universal_set) - _set_eval(ast_node[2], sets, universal_set)
+        return _set_eval(ast_node[1], sets, universal_set) - _set_eval(
+            ast_node[2], sets, universal_set
+        )
     raise ValueError(f"Unknown set op: {op}")
 
 
-def evaluate_set_expression(expression: str, sets: dict[str, set], universal_set: set) -> set:
+def evaluate_set_expression(
+    expression: str, sets: dict[str, set], universal_set: set
+) -> set:
     ast = _SetExprParser(expression).parse()
     return _set_eval(ast, sets, set(universal_set))
 
@@ -587,7 +730,9 @@ def coefficient_of_monomial(expression, powers: dict[str, int]) -> sp.Expr:
     return poly.coeff_monomial(monom)
 
 
-def coefficient_matches_options(expression, powers: dict[str, int], options: Sequence[str]) -> list[str]:
+def coefficient_matches_options(
+    expression, powers: dict[str, int], options: Sequence[str]
+) -> list[str]:
     coeff = coefficient_of_monomial(expression, powers)
     matches = []
     for option in options:
@@ -620,6 +765,7 @@ PolynomialExtendedGCD = polynomial_extended_gcd
 # ---------------------------------------------------------------------------
 # Number Theory basics
 # ---------------------------------------------------------------------------
+
 
 def is_prime(n: int) -> bool:
     if n < 2:
@@ -663,8 +809,20 @@ def extended_euclidean_table(a: int, b: int):
     r_prev, s_prev, t_prev = a, 1, 0
     r_curr, s_curr, t_curr = b, 0, 1
     rows = [
-        {"step": 0, "quotient": None, "remainder": r_prev, f"s (×{a})": s_prev, f"t (×{b})": t_prev},
-        {"step": 1, "quotient": None, "remainder": r_curr, f"s (×{a})": s_curr, f"t (×{b})": t_curr},
+        {
+            "step": 0,
+            "quotient": None,
+            "remainder": r_prev,
+            f"s (×{a})": s_prev,
+            f"t (×{b})": t_prev,
+        },
+        {
+            "step": 1,
+            "quotient": None,
+            "remainder": r_curr,
+            f"s (×{a})": s_curr,
+            f"t (×{b})": t_curr,
+        },
     ]
     k = 1
     while r_curr != 0:
@@ -673,20 +831,22 @@ def extended_euclidean_table(a: int, b: int):
         s_next = s_prev - q * s_curr
         t_next = t_prev - q * t_curr
         k += 1
-        rows.append({
-            "step": k,
-            "quotient": q,
-            "remainder": r_next,
-            f"s (×{a})": None if r_next == 0 else s_next,
-            f"t (×{b})": None if r_next == 0 else t_next,
-        })
+        rows.append(
+            {
+                "step": k,
+                "quotient": q,
+                "remainder": r_next,
+                f"s (×{a})": None if r_next == 0 else s_next,
+                f"t (×{b})": None if r_next == 0 else t_next,
+            }
+        )
         r_prev, s_prev, t_prev = r_curr, s_curr, t_curr
         r_curr, s_curr, t_curr = r_next, s_next, t_next
 
     gcd_val, s_coeff, t_coeff = r_prev, s_prev, t_prev
     print(f"  gcd({a}, {b}) = {gcd_val}")
     print(f"  Bézout: {gcd_val} = ({s_coeff})·{a} + ({t_coeff})·{b}")
-    print(f"  ↑ last non-zero in 'remainder' column")
+    print("  ↑ last non-zero in 'remainder' column")
     return pl.DataFrame(rows)
 
 
@@ -707,51 +867,74 @@ def polynomial_extended_euclidean_table(poly1, poly2):
     import polars as pl
     from sympy import Poly, div
 
-    p1 = Poly(poly1).set_domain('QQ')
-    p2 = Poly(poly2, *p1.gens).set_domain('QQ')
+    p1 = Poly(poly1).set_domain("QQ")
+    p2 = Poly(poly2, *p1.gens).set_domain("QQ")
     f_label = str(p1.as_expr())
     g_label = str(p2.as_expr())
 
-    r_prev, s_prev, t_prev = p1, Poly(1, *p1.gens, domain='QQ'), Poly(0, *p1.gens, domain='QQ')
-    r_curr, s_curr, t_curr = p2, Poly(0, *p1.gens, domain='QQ'), Poly(1, *p1.gens, domain='QQ')
+    r_prev, s_prev, t_prev = (
+        p1,
+        Poly(1, *p1.gens, domain="QQ"),
+        Poly(0, *p1.gens, domain="QQ"),
+    )
+    r_curr, s_curr, t_curr = (
+        p2,
+        Poly(0, *p1.gens, domain="QQ"),
+        Poly(1, *p1.gens, domain="QQ"),
+    )
 
     rows = [
-        {"step": 0, "quotient": None, "remainder": str(r_prev.as_expr()),
-         f"s (×f)": str(s_prev.as_expr()), f"t (×g)": str(t_prev.as_expr())},
-        {"step": 1, "quotient": None, "remainder": str(r_curr.as_expr()),
-         f"s (×f)": str(s_curr.as_expr()), f"t (×g)": str(t_curr.as_expr())},
+        {
+            "step": 0,
+            "quotient": None,
+            "remainder": str(r_prev.as_expr()),
+            "s (×f)": str(s_prev.as_expr()),
+            "t (×g)": str(t_prev.as_expr()),
+        },
+        {
+            "step": 1,
+            "quotient": None,
+            "remainder": str(r_curr.as_expr()),
+            "s (×f)": str(s_curr.as_expr()),
+            "t (×g)": str(t_curr.as_expr()),
+        },
     ]
     k = 1
     while not r_curr.is_zero:
-        q, r_next = div(r_prev, r_curr, *p1.gens, domain='QQ')
-        q = Poly(q, *p1.gens, domain='QQ')
-        r_next = Poly(r_next, *p1.gens, domain='QQ')
+        q, r_next = div(r_prev, r_curr, *p1.gens, domain="QQ")
+        q = Poly(q, *p1.gens, domain="QQ")
+        r_next = Poly(r_next, *p1.gens, domain="QQ")
         s_next = s_prev - q * s_curr
         t_next = t_prev - q * t_curr
         k += 1
-        rows.append({
-            "step": k,
-            "quotient": str(q.as_expr()),
-            "remainder": str(r_next.as_expr()),
-            f"s (×f)": None if r_next.is_zero else str(s_next.as_expr()),
-            f"t (×g)": None if r_next.is_zero else str(t_next.as_expr()),
-        })
+        rows.append(
+            {
+                "step": k,
+                "quotient": str(q.as_expr()),
+                "remainder": str(r_next.as_expr()),
+                "s (×f)": None if r_next.is_zero else str(s_next.as_expr()),
+                "t (×g)": None if r_next.is_zero else str(t_next.as_expr()),
+            }
+        )
         r_prev, s_prev, t_prev = r_curr, s_curr, t_curr
         r_curr, s_curr, t_curr = r_next, s_next, t_next
 
     gcd_poly = r_prev.monic()
     lc = r_prev.LC()
-    s_monic = Poly(s_prev.as_expr() / lc, *p1.gens, domain='QQ')
-    t_monic = Poly(t_prev.as_expr() / lc, *p1.gens, domain='QQ')
+    s_monic = Poly(s_prev.as_expr() / lc, *p1.gens, domain="QQ")
+    t_monic = Poly(t_prev.as_expr() / lc, *p1.gens, domain="QQ")
     print(f"  gcd = {gcd_poly.as_expr()}")
-    print(f"  Bézout: ({s_monic.as_expr()})·({f_label}) + ({t_monic.as_expr()})·({g_label})")
-    print(f"  ↑ last non-zero in 'remainder' column (made monic)")
+    print(
+        f"  Bézout: ({s_monic.as_expr()})·({f_label}) + ({t_monic.as_expr()})·({g_label})"
+    )
+    print("  ↑ last non-zero in 'remainder' column (made monic)")
     return pl.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------
 # Relations
 # ---------------------------------------------------------------------------
+
 
 def is_reflexive(S: set, R: set) -> bool:
     return all((x, x) in R for x in S)
@@ -847,6 +1030,7 @@ def classify_relation(S: set, R: set) -> dict[str, object]:
 # Bipartite graphs
 # ---------------------------------------------------------------------------
 
+
 def _gale_ryser(d1: list[int], d2: list[int]) -> bool:
     """True if a simple bipartite graph with degree sequences d1 (|V1|) and d2 (|V2|) exists."""
     if sum(d1) != sum(d2):
@@ -862,7 +1046,9 @@ def _gale_ryser(d1: list[int], d2: list[int]) -> bool:
     return True
 
 
-def bipartite_degree_check(v1_degrees: list[int], v2_degrees: list[int]) -> dict[str, object]:
+def bipartite_degree_check(
+    v1_degrees: list[int], v2_degrees: list[int]
+) -> dict[str, object]:
     """
     Classify whether a bipartite graph with the given degree sequences exists.
     Returns classification string matching the exam answer options.
