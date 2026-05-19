@@ -1,8 +1,9 @@
 import math
 import re
 from collections.abc import Callable, Iterable, Sequence
-from functools import cache
+from functools import cache, reduce
 from itertools import combinations, permutations, product
+from math import factorial
 
 import sympy as sp
 from sympy import Poly, symbols
@@ -130,6 +131,106 @@ def subset_parity_counts_1_to_n(n: int) -> dict[str, int]:
         "odd_even_and_even_odd": odd_even_and_even_odd,
         "odd_odd_and_even_even": odd_odd_and_even_even,
         "odd_odd": odd_odd,
+    }
+
+
+def circular_arrangements(n: int, labeled: bool = False, directed: bool = True) -> int:
+    """
+    Count distinct circular seating arrangements for n people at ONE table.
+
+    Args:
+        n:        number of people
+        labeled:  True if seats are distinguishable (fixed/numbered chairs)
+                  False if only relative order matters (floating table)
+        directed: True  if left/right neighbors are distinct (CW != CCW)
+                  False if mirror images are the same arrangement
+
+    Formulas:
+        labeled=True,  directed=True  → n!
+        labeled=True,  directed=False → n! / 2
+        labeled=False, directed=True  → (n-1)!
+        labeled=False, directed=False → (n-1)! / 2
+    """
+    base = factorial(n) if labeled else factorial(n - 1)
+    return base // 2 if not directed else base
+
+
+def circular_arrangements_multi_table(
+    n: int,
+    tables: list[int],
+    labeled: bool = False,
+    directed: bool = True,
+) -> int:
+    """
+    Count distinct ways to seat n people across multiple circular tables.
+
+    Steps:
+        1. Partition n people into groups of sizes given by `tables`
+           using the multinomial coefficient: n! / (t1! * t2! * ... * tk!)
+        2. Arrange each group circularly: multiply circular_arrangements(ti, ...)
+
+    Args:
+        n:        total number of people
+        tables:   list of table sizes, e.g. [6, 6, 8] for three tables
+                  (must sum to n)
+        labeled:  passed to circular_arrangements (seat labels)
+        directed: passed to circular_arrangements (L/R distinction)
+
+    Returns:
+        Total number of distinct seating arrangements.
+
+    Examples:
+        # 20 people, two tables of 10 (standard circular, directed)
+        >>> circular_arrangements_multi_table(20, [10, 10])
+        # = C(20,10) * 9! * 9!
+
+        # 20 people, four tables of 5
+        >>> circular_arrangements_multi_table(20, [5, 5, 5, 5])
+        # = 20! / (5!^4) * (4!)^4
+    """
+    if sum(tables) != n:
+        raise ValueError(f"Table sizes {tables} sum to {sum(tables)}, expected {n}.")
+
+    # Step 1: multinomial — ways to partition n people into the groups
+    multinomial = factorial(n)
+    for t in tables:
+        multinomial //= factorial(t)
+
+    # Step 2: circular arrangements within each table
+    circular = reduce(
+        lambda acc, t: acc * circular_arrangements(t, labeled, directed),
+        tables,
+        1,
+    )
+
+    return multinomial * circular
+
+
+def circular_arrangements_table(n: int) -> dict:
+    """All four single-table arrangement counts for n people."""
+    return {
+        "labeled_directed": circular_arrangements(n, labeled=True, directed=True),
+        "labeled_undirected": circular_arrangements(n, labeled=True, directed=False),
+        "unlabeled_directed": circular_arrangements(n, labeled=False, directed=True),
+        "unlabeled_undirected": circular_arrangements(n, labeled=False, directed=False),
+    }
+
+
+def circular_arrangements_multi_table_table(n: int, tables: list[int]) -> dict:
+    """All four arrangement counts for n people across multiple tables."""
+    return {
+        "labeled_directed": circular_arrangements_multi_table(
+            n, tables, labeled=True, directed=True
+        ),
+        "labeled_undirected": circular_arrangements_multi_table(
+            n, tables, labeled=True, directed=False
+        ),
+        "unlabeled_directed": circular_arrangements_multi_table(
+            n, tables, labeled=False, directed=True
+        ),
+        "unlabeled_undirected": circular_arrangements_multi_table(
+            n, tables, labeled=False, directed=False
+        ),
     }
 
 
@@ -538,6 +639,56 @@ def minimum_selections_for_sum(numbers: Sequence[int], target_sum: int) -> int |
     num_pairs = len(can_pair) // 2
     safe = [x for x in numbers if x not in can_pair]
     return len(safe) + num_pairs + 1
+
+
+def pigeonhole_min(k, guarantee_per_box):
+    """Minimum objects needed so some box has >= guarantee_per_box objects."""
+    return k * (guarantee_per_box - 1) + 1
+
+
+def halls_min_degree(n_left: int, n_right: int, required_matching: int) -> int:
+    """
+    Find the minimum degree (edges per left node) so that Hall's marriage
+    condition holds for every subset of `required_matching` left nodes.
+
+    Args:
+        n_left:            number of left nodes (e.g. 10 computers)
+        n_right:           number of right nodes (e.g. 5 printers)
+        required_matching: the subset size that must reach ALL right nodes (e.g. 5)
+
+    Returns:
+        Minimum degree per left node satisfying Hall's condition.
+
+    Example:
+        >>> halls_min_degree(10, 5, 5)
+        3
+    """
+    left = list(range(n_left))
+    right = list(range(n_right))
+
+    for degree in range(1, n_right + 1):
+        # Round-robin assignment: left node i gets printers [i*d % n_right, ...]
+        adj = {
+            u: [right[(u * degree + k) % n_right] for k in range(degree)] for u in left
+        }
+
+        if _check_hall(left, adj, required_matching):
+            return degree * n_left
+
+    raise ValueError("No valid degree found — check your parameters.")
+
+
+def _check_hall(left: list, adj: dict, required_matching: int) -> bool:
+    """
+    Verify Hall's condition: for every subset S of left nodes with |S| <= required_matching,
+    |N(S)| >= |S|.
+    """
+    for size in range(1, required_matching + 1):
+        for subset in combinations(left, size):
+            neighbors = {p for u in subset for p in adj[u]}
+            if len(neighbors) < len(subset):
+                return False
+    return True
 
 
 def count_permutations_subsequence(items: str | Sequence[str], subsequence: str) -> int:
@@ -1039,6 +1190,31 @@ def _gale_ryser(d1: list[int], d2: list[int]) -> bool:
         if lhs > rhs:
             return False
     return True
+
+
+def complete_graph_edges(n: int) -> int:
+    """Number of edges in the complete graph K_n."""
+    return n * (n - 1) // 2
+
+
+def inclusion_exclusion_uniform(n_sets: int, intersection_sizes: list[int]) -> int:
+    """
+    Inclusion-exclusion where every k-way intersection has the same size.
+
+    intersection_sizes[0] = size of each individual set
+    intersection_sizes[1] = size of each pairwise intersection
+    intersection_sizes[2] = size of each triple intersection
+    ...
+
+    Example (Q6): 4 sets, |A|=200, |A∩B|=50, |A∩B∩C|=25, |all 4|=5
+        inclusion_exclusion_uniform(4, [200, 50, 25, 5])
+    """
+    from math import comb
+
+    total = 0
+    for k, size in enumerate(intersection_sizes, start=1):
+        total += ((-1) ** (k + 1)) * comb(n_sets, k) * size
+    return total
 
 
 def bipartite_degree_check(
