@@ -8,6 +8,8 @@ __pycache__/
 venv/
 env/
 
+*.pdf
+
 # UV
 .python-version
 
@@ -247,3 +249,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+notes.md
