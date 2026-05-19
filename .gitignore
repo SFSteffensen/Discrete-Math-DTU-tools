@@ -239,6 +239,9 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Typst source files (local reference only, not part of the repo)
+*.typ
+
 # PyPI configuration file
 .pypirc
 

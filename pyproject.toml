@@ -10,3 +10,31 @@ dependencies = [
     "polars>=1.40.1", # Better, Faster, Stronger than pandas
     "sympy>=1.14.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test.py"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes (undefined names, unused imports)
+    "UP",   # pyupgrade (modernise syntax)
+    "B",    # flake8-bugbear (likely bugs / design issues)
+    "SIM",  # flake8-simplify
+    "I",    # isort
+]
+ignore = [
+    "E501", # line-too-long: formatter handles this; math expressions are often long
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

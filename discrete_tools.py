@@ -1,8 +1,8 @@
 import math
 import re
-from functools import lru_cache
+from collections.abc import Callable, Iterable, Sequence
+from functools import cache
 from itertools import combinations, permutations, product
-from typing import Callable, Iterable, Sequence
 
 import sympy as sp
 from sympy import Poly, symbols
@@ -99,7 +99,7 @@ def recursive_piecewise_value(
     if missing_base:
         raise ValueError(f"Base values are not contiguous. Missing: {missing_base}")
 
-    @lru_cache(maxsize=None)
+    @cache
     def a(k: int) -> int:
         if k in initial_values:
             return initial_values[k]
@@ -234,9 +234,7 @@ def classify_linear_function_descriptor(descriptor: str) -> dict[str, object]:
     well_defined = True
     if domain == "N" and codomain == "N":
         well_defined = a_int and b_int and a >= 0 and b >= 0
-    elif domain == "N" and codomain in ("Z",):
-        well_defined = a_int and b_int
-    elif domain == "Z" and codomain in ("Z",):
+    elif domain == "N" and codomain in ("Z",) or domain == "Z" and codomain in ("Z",):
         well_defined = a_int and b_int
     elif domain == "Z" and codomain == "N":
         well_defined = a == 0 and b_int and b >= 0
@@ -263,9 +261,7 @@ def classify_linear_function_descriptor(descriptor: str) -> dict[str, object]:
         surjective = bool(a == 1 and b == 0)
     elif domain == "Z" and codomain == "Z":
         surjective = bool(abs(a) == 1)
-    elif domain == "R" and codomain == "R":
-        surjective = bool(a != 0)
-    elif domain == "Q" and codomain == "Q":
+    elif domain == "R" and codomain == "R" or domain == "Q" and codomain == "Q":
         surjective = bool(a != 0)
     else:
         surjective = False
@@ -426,7 +422,7 @@ def tautology_checker(expression: str) -> dict[str, object]:
     table = []
     all_true = True
     for values in product([False, True], repeat=len(vars_sorted)):
-        valuation = dict(zip(vars_sorted, values))
+        valuation = dict(zip(vars_sorted, values, strict=True))
         result = _logic_eval(ast, valuation)
         table.append({"valuation": valuation, "result": result})
         if not result:
@@ -482,7 +478,7 @@ def hypercube_edges(n: int) -> list[tuple[str, str]]:
         (u, v)
         for i, u in enumerate(verts)
         for v in verts[i + 1 :]
-        if sum(a != b for a, b in zip(u, v)) == 1
+        if sum(a != b for a, b in zip(u, v, strict=True)) == 1
     ]
 
 
@@ -724,7 +720,6 @@ def coefficient_of_monomial(expression, powers: dict[str, int]) -> sp.Expr:
     syms = symbols(" ".join(symbol_names))
     if not isinstance(syms, tuple):
         syms = (syms,)
-    sym_map = dict(zip(symbol_names, syms))
     poly = Poly(sp.expand(expression), *syms)
     monom = tuple(powers[name] for name in symbol_names)
     return poly.coeff_monomial(monom)
